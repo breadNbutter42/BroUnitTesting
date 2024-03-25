@@ -486,14 +486,14 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
             return;
         }
 
-        if (from_ == address(this)
-        || to_ == address(this)
-        ) { //Don't limit fees processing or LP creation
+        if (from_ == address(this) || to_ == address(this)) {
+            //Don't limit fees processing or LP creation
             super._update(from_, to_, amount_);
             return;
         }
         
-        if (swapping) { //Block users during processFees(), in case of reentrant user calls
+        if (swapping) {
+            //Block users during processFees(), in case of reentrant user calls
             revert("User cannot trade in the middle of internal LP creation. You have created a reentrancy issue");
         }
 
@@ -504,15 +504,18 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
             takeFee_ = false;
         }
 
-        if (takeFee_ && totalFees > 0) { //If any fees, then calculate wei amount of DRAGON fees. 
+        if (takeFee_ && totalFees > 0) {
+            //If any fees, then calculate wei amount of DRAGON fees. 
             uint256 fees_ = (amount_ * totalFees) / 10000; //Fees are represented as basis points where 100 is 1% aka 100/10000
             amount_ = amount_ - fees_;
             super._update(from_, address(this), fees_); //Send 8% transfer fee to this contract
         }
 
-        if (to_ == uniswapV2Pair){ //Only force processFees() on a user's sells (and incidentally LP additions)
+        if (to_ == uniswapV2Pair) {
+            //Only force processFees() on a user's sells (and incidentally LP additions)
             uint256 phase_ = tradingPhase();
-            if (phase_ != TOTAL_PHASES && phase_ != 0) { //Only force processFees() during whale limited phases, to keep fees from collecting too much at launch.
+            if (phase_ != TOTAL_PHASES && phase_ != 0) {
+                //Only force processFees() during whale limited phases, to keep fees from collecting too much at launch.
                 processFees();
             }
         }
@@ -526,18 +529,21 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
     ) private {
         uint256 tradingPhase_ = tradingPhase();
 
-        if (tradingPhase_ == TOTAL_PHASES){ //No limits on the last phase
+        if (tradingPhase_ == TOTAL_PHASES){
+            //No limits on the last phase
             return;
         }
 
-        if (to_ != uniswapV2Pair && !dragonCtPairs[to_]) { //Do not limit LP creation or selling
+        if (to_ != uniswapV2Pair && !dragonCtPairs[to_]) {
+            //Do not limit LP creation or selling
             require(allowlisted[to_] <= tradingPhase_, "Not allowlisted for current phase");
             totalPurchased[to_] += amount_; //Total amount user received in whale limited phases
             require(totalPurchased[to_] <= maxWeiPerPhase[tradingPhase_], "Receiving too much for current whale limited phase");
         }
     }
 
-    function swapAndBurnLP(uint256 swapToDRAGONLP_, uint256 swapPerCtLP_) private { //Swap half these DRAGON token and make into LPs
+    function swapAndBurnLP(uint256 swapToDRAGONLP_, uint256 swapPerCtLP_) private {
+        //Swap half these DRAGON token and make into LPs
         uint256 ctLength_ = communityTokens.length; //Number of CT token addresses in our list
         uint256 totalDRAGONTokens_ = (swapToDRAGONLP_ + (swapPerCtLP_ * ctLength_)); //Total DRAGON tokens to process here
 
@@ -578,15 +584,14 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         path[0] = address(this); //DRAGON
         path[1] = WAVAX; //WAVAX
 
-        try
-        uniswapV2Router.swapExactTokensForAVAXSupportingFeeOnTransferTokens( //DRAGON to AVAX swap on main dex
+        try uniswapV2Router.swapExactTokensForAVAXSupportingFeeOnTransferTokens ( //DRAGON to AVAX swap on main dex
             tokenAmount_,
             100, //Infinite slippage basically since it's in wei
             path,
             address(this), //Send the AVAX we receive from the swap to this contract
-            block.timestamp)
-        {}
-        catch {
+            block.timestamp
+        ) {
+        } catch {
             revert(string("swapDRAGONForAVAX failed"));
         }
     }
@@ -596,30 +601,28 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         path[0] = WAVAX; //WAVAX
         path[1] = communityTokens[index_]; //CT
 
-        try  
-        uniswapV2Routers[index_].swapExactAVAXForTokensSupportingFeeOnTransferTokens //AVAX to CT, swap on dex router with most LP
-        {value: avaxAmount_}(
+        //AVAX to CT, swap on dex router with most LP
+        try uniswapV2Routers[index_].swapExactAVAXForTokensSupportingFeeOnTransferTokens{value: avaxAmount_} (
             100, //Infinite slippage basically since it's in wei
             path,
             address(this), //Send CT tokens received to this contract
-            block.timestamp)
-        {}
-        catch {
+            block.timestamp
+        ) {
+        } catch {
             revert(string("swapAvaxForCT failed"));
         }
     }
 
     function addLiquidityDRAGON(uint256 tokenAmount_, uint256 avaxAmount_)  private { //Make and burn LP tokens DRAGON/WAVAX
-        try  
-        uniswapV2Router.addLiquidityAVAX{value: avaxAmount_}( //Amount of AVAX to send for LP on main dex
+        try uniswapV2Router.addLiquidityAVAX{value: avaxAmount_} ( //Amount of AVAX to send for LP on main dex
             address(this),
             tokenAmount_,
             100, //Infinite slippage basically since it's in wei
             100, //Infinite slippage basically since it's in wei
             DEAD, //Burn LP
-            block.timestamp)
-        {}
-        catch {
+            block.timestamp
+        ) {
+        } catch {
             revert(string("addLiquidityDRAGON failed"));
         }
     }
@@ -628,8 +631,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         IERC20(ctAddress_).approve(address(uniswapV2Router), ctAmount_); //Approve token transfer for router to make LP
 
         //Add the liquidity
-        try  
-        uniswapV2Router.addLiquidity(
+        try uniswapV2Router.addLiquidity (
             address(this), //DRAGON
             ctAddress_, //CT or WAVAX
             dragonAmount_,
@@ -637,9 +639,9 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
             100, //Infinite slippage basically since it's in wei
             100, //Infinite slippage basically since it's in wei
             DEAD, //Burn LP
-            block.timestamp)
-        {}
-        catch {
+            block.timestamp
+        ) {
+        } catch {
             revert(string("addLiquidityCT failed"));
         }
     }
@@ -654,113 +656,114 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
     }
 
     //Public functions:
-    function processFees() public {  //Swap DRAGON fees for community tokens, make into LP, and burn LP
-        if (tradingPhase() == TOTAL_PHASES){ //If IDO phases are completed, then prevent back to back dumps
+    function processFees() public {  // Swap DRAGON fees for community tokens, make into LP, and burn LP
+        if (tradingPhase() == TOTAL_PHASES) {
+            // If IDO phases are completed, then prevent back to back dumps
             require(block.timestamp >= (lastTimeCalled + SECONDS_PER_PHASE), "Cannot process fees more than once every 8 minutes"); //Prevent back to back fees dumping
             lastTimeCalled = block.timestamp;
         }
 
-        //Multiply first, then divide, using () to order the operations, like (x * y) / z
-        uint256 maxProcessFees_ = (balanceOf(uniswapV2Pair) * 8) / 100; //Cannot process fees totalling more than 8% of DRAGON in the LP at once, to reduce price dump
+        // Multiply first, then divide, using () to order the operations, like (x * y) / z
+        uint256 maxProcessFees_ = (balanceOf(uniswapV2Pair) * 8) / 100; // Cannot process fees totalling more than 8% of DRAGON in the LP at once, to reduce price dump
         uint256 contractDRAGONBalance_ = balanceOf(address(this));
-        uint256 amountOfFees_; //Amount of fees to process now
+        uint256 amountOfFees_; // Amount of fees to process now
         if (contractDRAGONBalance_ < maxProcessFees_){
             amountOfFees_ = contractDRAGONBalance_;
         } else {
             amountOfFees_ = maxProcessFees_;
         }
 
-        bool canSwap_ = amountOfFees_ >= processFeesMinimum; //Must have the minimum amount of fees collected to process them
+        bool canSwap_ = amountOfFees_ >= processFeesMinimum; // Must have the minimum amount of fees collected to process them
 
         if (canSwap_ && !swapping) {
             if (totalFees == 0) {
-                super._update(address(this), DEAD, contractDRAGONBalance_); //Burn any remaining fees if not collecting them anymore
+                super._update(address(this), DEAD, contractDRAGONBalance_); // Burn any remaining fees if not collecting them anymore
                 return;
             }
             
-            swapping = true; //Reentrancy guard
+            swapping = true; // Reentrancy guard
 
-            //Multiply first, then divide, using () to order the operations, like (x * y) / z
-            uint256 swapToCtLP_ = (amountOfFees_ * communityLPFee) / totalFees; //Calculate community tokens LP fee portion
-            uint256 swapToDRAGONLP_ = (amountOfFees_ * liquidityFee) / totalFees; //Calculate DRAGON LP fee portion
-            uint256 farmTokens_ = (amountOfFees_ * farmFee) / totalFees; //Calculate farm fee portion
-            uint256 treasuryTokens_ = (amountOfFees_ * treasuryFee) / totalFees; //Calculate treasury fee portion
+            // Multiply first, then divide, using () to order the operations, like (x * y) / z
+            uint256 swapToCtLP_ = (amountOfFees_ * communityLPFee) / totalFees; // Calculate community tokens LP fee portion
+            uint256 swapToDRAGONLP_ = (amountOfFees_ * liquidityFee) / totalFees; // Calculate DRAGON LP fee portion
+            uint256 farmTokens_ = (amountOfFees_ * farmFee) / totalFees; // Calculate farm fee portion
+            uint256 treasuryTokens_ = (amountOfFees_ * treasuryFee) / totalFees; // Calculate treasury fee portion
 
-            uint256 swapPerCtLP_ =  swapToCtLP_ / communityTokens.length; //Make sure total amount of CT LP is divisible by CT tokens
-            uint256 remainder_ = amountOfFees_ - (swapToDRAGONLP_ + farmTokens_ + treasuryTokens_ + (swapPerCtLP_ * communityTokens.length)); //Calculate dust leftover
-            swapToDRAGONLP_ += remainder_; //Add dust to DRAGON LP portion
+            uint256 swapPerCtLP_ =  swapToCtLP_ / communityTokens.length; // Make sure total amount of CT LP is divisible by CT tokens
+            uint256 remainder_ = amountOfFees_ - (swapToDRAGONLP_ + farmTokens_ + treasuryTokens_ + (swapPerCtLP_ * communityTokens.length)); // Calculate dust leftover
+            swapToDRAGONLP_ += remainder_; // Add dust to DRAGON LP portion
 
             if (treasuryTokens_ > 0){
                 super._update(address(this), treasuryAddress, treasuryTokens_); //Send fees to treasuryAddress
             }
 
             if (farmTokens_ > 0){
-                super._update(address(this), farmAddress, farmTokens_); //Send fees to farm
+                super._update(address(this), farmAddress, farmTokens_); // Send fees to farm
             }
 
             swapAndBurnLP(swapToDRAGONLP_, swapPerCtLP_);
-            swapping = false; //Reentrancy guard
-            uint256 newDRAGONBalance_ = balanceOf(address(this)); //Calculate any dust leftover from CT LP creation
-            emit ProcessFees(msg.sender, (contractDRAGONBalance_ - newDRAGONBalance_)); //Amount of DRAGON fees processed minus any dust leftover
+            swapping = false; // Reentrancy guard
+            uint256 newDRAGONBalance_ = balanceOf(address(this)); // Calculate any dust leftover from CT LP creation
+            emit ProcessFees(msg.sender, (contractDRAGONBalance_ - newDRAGONBalance_)); // Amount of DRAGON fees processed minus any dust leftover
         } else {
             if (swapping){
                revert("Cannot process now, already in the middle of processing fees. You have created a reentrancy issue");
             }
 
-            if (!canSwap_ && tradingPhase() == TOTAL_PHASES){ //Don't revert forced fees processing of whale limited phases
+            if (!canSwap_ && tradingPhase() == TOTAL_PHASES){ // Don't revert forced fees processing of whale limited phases
                revert("Cannot process yet, more fees need to be collected first");
             }
         }
     }
 
     function seedAndBurnCtLP(uint256 ctIndex_, address communityToken_, uint256 amountDragon_, uint256 amountCt_) external {
-        require(tradingPhase() != TOTAL_PHASES, "Phases are completed already"); //This function is just to seed LP for IDO launch
-        require(communityTokens[ctIndex_] == communityToken_, "Token not found in communityTokens array at that index"); //Verify valid CT address
+        require(tradingPhase() != TOTAL_PHASES, "Phases are completed already"); // This function is just to seed LP for IDO launch
+        require(communityTokens[ctIndex_] == communityToken_, "Token not found in communityTokens array at that index"); // Verify valid CT address
         require(amountDragon_ > 100000000000000000, "Must send at least 0.1 Dragon tokens");
         require(amountCt_ > 100000000000000000, "Must send at least 0.1 Community tokens");
         require(!swapping, "Already making CT LP, you have created a reentrancy issue");
-        swapping = true; //Reentrancy block
+        swapping = true; // Reentrancy block
         transfer(address(this), amountDragon_);
-        IERC20(communityToken_).transferFrom(msg.sender, address(this), amountCt_); //User must first approve this contract to spend their CT tokens
-        _approve(address(this), address(uniswapV2Router), amountDragon_); //Approve main router to use our DRAGON tokens and make LP
+        IERC20(communityToken_).transferFrom(msg.sender, address(this), amountCt_); // User must first approve this contract to spend their CT tokens
+        _approve(address(this), address(uniswapV2Router), amountDragon_); // Approve main router to use our DRAGON tokens and make LP
         addLiquidityCT(amountDragon_, amountCt_, communityToken_);
         swapping = false;
         emit SwapAndLiquify(amountDragon_,amountCt_, communityToken_);
     }
 
     function seedAndBurnDragonLP(uint256 amountDragon_, uint256 amountAvax_) external payable {
-        require(tradingPhase() != TOTAL_PHASES, "Phases are completed already"); //This function is just to seed LP for IDO launch
-        require(msg.value == amountAvax_, "Different amount of Avax sent than indicated in call values"); //Verify intended amount sent
+        require(tradingPhase() != TOTAL_PHASES, "Phases are completed already"); // This function is just to seed LP for IDO launch
+        require(msg.value == amountAvax_, "Different amount of Avax sent than indicated in call values"); // Verify intended amount sent
         require(amountDragon_ >= 100000000000000000, "Must send at least 0.1 Dragon tokens");
         require(amountAvax_ >= 100000000000000000, "Must send at least 0.1 AVAX");
         require(!swapping, "Already making Dragon LP, you have created a reentrancy issue");
-        swapping = true; //Reentrancy block
+        swapping = true; // Reentrancy block
         transfer(address(this), amountDragon_);
-        _approve(address(this), address(uniswapV2Router), amountDragon_); //Approve main router to use our DRAGON tokens and make LP
+        _approve(address(this), address(uniswapV2Router), amountDragon_); // Approve main router to use our DRAGON tokens and make LP
         addLiquidityDRAGON(amountDragon_, amountAvax_);
         swapping = false;
         emit SwapAndLiquify(amountDragon_, amountAvax_, WAVAX);
     }
 
-    function tradingActive() public view returns (bool) { //Check if startTime happened yet to open trading
+    function tradingActive() public view returns (bool) { // Check if startTime happened yet to open trading
         if (startTime > 0  && phasesInitialized) {
-            return block.timestamp >= startTime; //Return true if phases is set and has started
+            return block.timestamp >= startTime; // Return true if phases is set and has started
         } else {
             return false;
         }
     }
 
-    function tradingRestricted() public view returns (bool) { //Check if we are in allowlist phases
-        return tradingActive() && block.timestamp <= (startTime + (SECONDS_PER_PHASE * (TOTAL_PHASES - 1))); //True if tradingActive, but whale limited phases is not over
+    function tradingRestricted() public view returns (bool) { // Check if we are in allowlist phases
+        return tradingActive() && block.timestamp <= (startTime + (SECONDS_PER_PHASE * (TOTAL_PHASES - 1))); // True if tradingActive, but whale limited phases is not over
     }
 
-    function tradingPhase() public view returns (uint256 phase) { //Check the phase
+    function tradingPhase() public view returns (uint256 phase) { // Check the phase
         if (!tradingActive()) {
-            return 0; //0 == No buying
+            return 0; // 0 == No buying
         }
 
         uint256 secondsPastStart_ = block.timestamp - startTime;
-        uint256 phase_ = (secondsPastStart_ / SECONDS_PER_PHASE) + 1; //Count phase periods elapsed to see what phase we are in
+        uint256 phase_ = (secondsPastStart_ / SECONDS_PER_PHASE) + 1; // Count phase periods elapsed to see what phase we are in
         if (phase_ > TOTAL_PHASES) {
             phase_ = TOTAL_PHASES;
         }
@@ -768,7 +771,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         return phase_;
     }
 
-    //Set Phases onlyOwner:
+    // Set Phases onlyOwner:
     function setPhasesStartTime(uint256 startTime_) external onlyOwner phasesLock{
         require(startTime_ > 0, "Start time must be greater than 0");
         startTime = startTime_;
@@ -782,17 +785,17 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         require(maxWei_[0] > 0, "Whale limit must be greater than 0 wei");
         for (uint256 i = 0; i < length_; i++){
             require(maxWei_[i] >= previousPhaseMaxWei_, "Max amount users can hold must increase or stay the same through the phases.");
-            maxWeiPerPhase[i+1] = maxWei_[i]; //Max phase 1 = maxWei_[0] 
+            maxWeiPerPhase[i+1] = maxWei_[i]; // Max phase 1 = maxWei_[0] 
             previousPhaseMaxWei_ = maxWei_[i];
         }
         emit SettingsChanged(msg.sender, "setWhaleLimitsPerPhase");
     }
 
-    function lockPhasesSettings() external onlyOwner phasesLock{ //Phases initialization cannot be unlocked after it is locked
+    function lockPhasesSettings() external onlyOwner phasesLock{ // Phases initialization cannot be unlocked after it is locked
         require(startTime >= block.timestamp, "startTime must be set for the future");
         require(maxWeiPerPhase[1] > 0 , "Whale limited phases maxWeiPerPhase must be greater than 0");
         checkCtPairs();
-        phasesInitialized = true; //Lock these phases settings
+        phasesInitialized = true; // Lock these phases settings
         emit SettingsChanged(msg.sender, "lockPhasesSettings");
     }
 
@@ -800,97 +803,97 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         require(phase_ <= TOTAL_PHASES, "Phases are already completed");
         uint256 length_ = users_.length;
         require(length_ > 0, "Must include at least one user");
-        require(length_ <= 200, "Cannot add more than 200 users in one transaction"); //Prevent out of gas errors  
+        require(length_ <= 200, "Cannot add more than 200 users in one transaction"); // Prevent out of gas errors  
         for (uint256 i = 0; i < length_; i++) {
             allowlisted[users_[i]] = phase_;
         }
         emit SettingsChanged(msg.sender, "setAllowlistedForSomePhase");
     }
 
-    //Fallback function and generic transfer functions to handle any tokens that come into contract:
+    // Fallback function and generic transfer functions to handle any tokens that come into contract:
     fallback() external payable {}
 
     receive() external payable {}
 
     function withdrawAvaxTo(address payable to_, uint256 amount_) external onlyOwner {
         require(to_ != address(0), "Cannot withdraw to 0 address");
-        to_.transfer(amount_); //Can only send Avax from our contract, any user's wallet is safe
+        to_.transfer(amount_); // Can only send Avax from our contract, any user's wallet is safe
         emit AvaxWithdraw(to_, amount_);
     }
 
     function iERC20TransferFrom(address contract_, address to_, uint256 amount_) external onlyOwner {
-        noDRAGONTokens(contract_);  //Cannot transfer DRAGON tokens
-        (bool success) = IERC20Token(contract_).transferFrom(address(this), to_, amount_); //Can only transfer from our own contract
+        noDRAGONTokens(contract_);  // Cannot transfer DRAGON tokens
+        (bool success) = IERC20Token(contract_).transferFrom(address(this), to_, amount_); // Can only transfer from our own contract
         require(success, 'token transfer from sender failed');
         emit TokenWithdraw(to_, amount_, contract_);
     }
 
     function iERC20Transfer(address contract_, address to_, uint256 amount_) external onlyOwner {
-        noDRAGONTokens(contract_);  //Cannot transfer DRAGON tokens
+        noDRAGONTokens(contract_); // Cannot transfer DRAGON tokens
         (bool success) = IERC20Token(contract_).transfer(to_, amount_); 
-        //Since interfaced contract looks at msg.sender then this can only send from our own contract
+        // Since interfaced contract looks at msg.sender then this can only send from our own contract
         require(success, 'token transfer from sender failed');
         emit TokenWithdraw(to_, amount_, contract_);
     }
 
     function iERC20Approve(address contract_, address spender_, uint256 amount_) external onlyOwner {
-        noDRAGONTokens(contract_);  //Cannot transfer DRAGON tokens
-        IERC20Token(contract_).approve(spender_, amount_); //Since interfaced contract looks at msg.sender then this can only send from our own contract
+        noDRAGONTokens(contract_); // Cannot transfer DRAGON tokens
+        IERC20Token(contract_).approve(spender_, amount_); // Since interfaced contract looks at msg.sender then this can only send from our own contract
         emit TokenApproved(spender_, amount_, contract_);
     }
 
     function iERC721TransferFrom(address contract_, address to_, uint256 tokenId_) external onlyOwner {
-        noDRAGONTokens(contract_);  //Cannot transfer DRAGON tokens
-        IERC721Token(contract_).transferFrom(address(this), to_, tokenId_); //Can only transfer from our own contract
+        noDRAGONTokens(contract_); // Cannot transfer DRAGON tokens
+        IERC721Token(contract_).transferFrom(address(this), to_, tokenId_); // Can only transfer from our own contract
         emit NFTWithdraw(to_, tokenId_, contract_);
     }
 
     function iERC721SafeTransferFrom(address contract_, address to_, uint256 tokenId_) external onlyOwner {
-        noDRAGONTokens(contract_);  //Cannot transfer DRAGON tokens
-        IERC721Token(contract_).safeTransferFrom(address(this), to_, tokenId_); //Can only transfer from our own contract
+        noDRAGONTokens(contract_); // Cannot transfer DRAGON tokens
+        IERC721Token(contract_).safeTransferFrom(address(this), to_, tokenId_); // Can only transfer from our own contract
         emit NFTWithdraw(to_, tokenId_, contract_);
     }
 
     function iERC721Transfer(address contract_, address to_, uint256 tokenId_) external onlyOwner {
-        noDRAGONTokens(contract_);  //Cannot transfer DRAGON tokens
-        IERC721Token(contract_).transfer( address(this), to_, tokenId_); //Can only transfer from our own contract
+        noDRAGONTokens(contract_); // Cannot transfer DRAGON tokens
+        IERC721Token(contract_).transfer( address(this), to_, tokenId_); // Can only transfer from our own contract
         emit NFTWithdraw(to_, tokenId_, contract_);
     }
 
     function iERC721SafeTransfer(address contract_, address to_, uint256 tokenId_) external onlyOwner {
-        noDRAGONTokens(contract_);  //Cannot transfer DRAGON tokens
-        IERC721Token(contract_).safeTransfer( address(this), to_, tokenId_); //Can only transfer from our own contract
+        noDRAGONTokens(contract_); // Cannot transfer DRAGON tokens
+        IERC721Token(contract_).safeTransfer( address(this), to_, tokenId_); // Can only transfer from our own contract
         emit NFTWithdraw(to_, tokenId_, contract_);
     }
 
     function noDRAGONTokens(address contract_)  internal view {
-        require(contract_ != address(this), "Owner cannot withdraw $DRAGON token fees collected"); //No $DRAGON tokens, as they are earmarked for fees processing
-        require(!swapping, "Owner cannot withdraw while fees are processing"); //Reentrancy guard prevents CT tokens being removed during fees processing
+        require(contract_ != address(this), "Owner cannot withdraw $DRAGON token fees collected"); // No $DRAGON tokens, as they are earmarked for fees processing
+        require(!swapping, "Owner cannot withdraw while fees are processing"); // Reentrancy guard prevents CT tokens being removed during fees processing
     }
 }
 
-//"May the dragon's song bring harmony." -Harmony Scales
+// "May the dragon's song bring harmony." -Harmony Scales
 
 
-  //Legal Disclaimer: 
+  // Legal Disclaimer: 
 // DragonFire (DRAGON) is a meme coin (also known as a community token) created for entertainment purposes only. 
-//It holds no intrinsic value and should not be viewed as an investment opportunity or a financial instrument.
-//It is not a security, as it promises no financial returns to buyers, and does not rely solely on the efforts of the creators and developers.
+// It holds no intrinsic value and should not be viewed as an investment opportunity or a financial instrument.
+// It is not a security, as it promises no financial returns to buyers, and does not rely solely on the efforts of the creators and developers.
 
 // There is no formal development team behind DRAGON, and it lacks a structured roadmap. 
-//Users should understand that the project is experimental and may undergo changes or discontinuation without prior notice.
+// Users should understand that the project is experimental and may undergo changes or discontinuation without prior notice.
 
 // DRAGON serves as a platform for the community to engage in activities such as liquidity provision and token swapping on the Avalanche blockchain. 
-//It aims to foster community engagement and collaboration, allowing users to participate in activities that may impact the value of their respective tokens.
+// It aims to foster community engagement and collaboration, allowing users to participate in activities that may impact the value of their respective tokens.
 
 // It's important to note that the value of DRAGON and associated community tokens may be subject to significant volatility and speculative trading. 
-//Users should exercise caution and conduct their own research before engaging with DRAGON or related activities.
+// Users should exercise caution and conduct their own research before engaging with DRAGON or related activities.
 
-// Participation in DRAGON-related activities should not be solely reliant on the actions or guidance of developers. 
-//Users are encouraged to take personal responsibility for their involvement and decisions within the DRAGON ecosystem.
+//  Participation in DRAGON-related activities should not be solely reliant on the actions or guidance of developers. 
+// Users are encouraged to take personal responsibility for their involvement and decisions within the DRAGON ecosystem.
 
 // By interacting with DRAGON or participating in its associated activities, 
-//users acknowledge and accept the inherent risks involved and agree to hold harmless the creators and developers of DRAGON from any liabilities or losses incurred.
+// users acknowledge and accept the inherent risks involved and agree to hold harmless the creators and developers of DRAGON from any liabilities or losses incurred.
 
 
 /*

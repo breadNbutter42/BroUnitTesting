@@ -2,13 +2,13 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {DragonToken} from "../src/DragonToken.sol";
+import {DragonFire} from "../src/DragonToken.sol";
 
 contract CounterTest is Test {
-    DragonToken public dragonToken;
+    DragonFire public dragonFire;
 
     function setUp() public {
-        dragonToken = new DragonToken();
+        dragonFire = new DragonFire();
     }
 
     function test() public {

@@ -286,8 +286,12 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         
         require(totalFees == 800, "Total fees must equal 8% at deployment");
 
-        communityTokens = // [0x0b9d5D9136855f6FEc3c0993feE6E9CE8a297846]; // FUJI Testnet Chainlink: 0x0b9d5D9136855f6FEc3c0993feE6E9CE8a297846 
-                       // Mainnet: 
+        communityTokens = 
+         // FUJI Testnet Chainlink: 0x0b9d5D9136855f6FEc3c0993feE6E9CE8a297846 
+        // [
+        //     0x0b9d5D9136855f6FEc3c0993feE6E9CE8a297846
+        // ];
+        // Mainnet: 
         [
             0xab592d197ACc575D16C3346f4EB70C703F308D1E,
             0x420FcA0121DC28039145009570975747295f2329,
@@ -297,7 +301,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
             0xc8E7fB72B53D08C4f95b93b390ed3f132d03f2D5,
             0x69260B9483F9871ca57f81A90D91E2F96c2Cd11d,
             0x96E1056a8814De39c8c3Cd0176042d6ceCD807d7
-        ];    
+        ];
         // FEED// COQ// KIMBO// LUCKY// DWC// SQRCAT// GGP// OSAK// 
 
         uint256 length_ = communityTokens.length; // Total number of Community Tokens
@@ -305,8 +309,12 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         require(length_ > 0, "Contract must have at least one community token in rewardsToken array");
 
         // Choose dex router with best CT/AVAX liquidity for each CT
-        ctRouters = // [0xf8e81D47203A594245E36C48e151709F0C19fBe8]; // Fuji Testnet: 0xd7f655E3376cE2D7A2b08fF01Eb3B1023191A901
-                       // Mainnet: 
+        ctRouters =
+        // Fuji Testnet: 0xd7f655E3376cE2D7A2b08fF01Eb3B1023191A901
+        // [
+        //     0xf8e81D47203A594245E36C48e151709F0C19fBe8
+        // ];
+        // Mainnet: 
         [
             0x60aE616a2155Ee3d9A68541Ba4544862310933d4,
             0x60aE616a2155Ee3d9A68541Ba4544862310933d4,
@@ -367,7 +375,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         checkCtPairs();
         
         emit SettingsChanged(msg.sender, "setMainDex");
-    }
+    } // @note covered
 
     function setCommunityTokens(address[] memory addresses_, address[] memory routers_) external onlyOwner feeSettingsLock { 
         // Set array of community tokens to buy and burn LP for, in case we need to change any.
@@ -379,7 +387,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         checkCtPairs();        
         setCtRouters(routers_);
         emit SettingsChanged(msg.sender, "setCommunityTokens");
-    }
+    } // @note covered
 
     function setCtRouters(address[] memory routers_) public onlyOwner feeSettingsLock{
         // Can change each dex we buy CT on, to use dex with most LP per CT
@@ -402,7 +410,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         }
 
         emit SettingsChanged(msg.sender, "setCtRouters");
-    }
+    } // @note covered
 
     function setProcessFeesMinimum(uint256 amount_) external onlyOwner feeSettingsLock {
         // Set minimum amount of Dragon tokens collected as fees to swap and burn with
@@ -411,7 +419,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
 
         processFeesMinimum = amount_;
         emit SettingsChanged(msg.sender, "setProcessFeesMinimum");
-    }
+    } // @note covered
 
     function setTreasuryAddress(address treasury_) external onlyOwner feeSettingsLock{
         // Set address of treasury multisig
@@ -420,7 +428,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         isExcludedFromFees[treasuryAddress] = false; // Remove old treasury from fees exclusion list
         treasuryAddress = treasury_;
         emit SettingsChanged(msg.sender, "setTreasuryAddress");
-    }
+    } // @note covered
 
     function setFarmAddress(address farm_) external onlyOwner feeSettingsLock{
         // Set address for farm rewards collection
@@ -430,7 +438,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         isExcludedFromFees[farmAddress] = false; // Remove old farm from fees exclusion list
         farmAddress = farm_;
         emit SettingsChanged(msg.sender, "setFarmAddress");
-    }
+    } // @note covered
 
     function excludeFromFees(address account_) external onlyOwner feeSettingsLock{
         // Exclude address from transfer fees
@@ -438,7 +446,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
 
         isExcludedFromFees[account_] = true; // Account is now excluded from fees
         emit ExcludeFromFees(account_);
-    }
+    } // @note covered
 
     function includeInFees(address account_) external onlyOwner feeSettingsLock{
         // Remove address from excluded list
@@ -447,7 +455,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
 
         isExcludedFromFees[account_] = false; // Account is now no longer excluded from fees
         emit IncludeInFees(account_);
-    }
+    } // @note covered
 
     function transferOwnership(address newOwner_) public override onlyOwner {
         require(newOwner_ != address(0), "Cannot set to 0 address");
@@ -455,7 +463,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         isExcludedFromFees[newOwner_] = true; // Add new owner to fees exclusion list
         isExcludedFromFees[owner()] = false; // Remove old owner from fees exclusion list
         super.transferOwnership(newOwner_);
-    }
+    } // @note covered
 
     function setFeesInBasisPts( // Set transfer fees in basis points where 100 = 1%
         uint256 communityLPFee_, 
@@ -767,7 +775,8 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         emit SwapAndLiquify(amountDragon_, amountAvax_, WAVAX);
     }
 
-    function tradingActive() public view returns (bool) { // Check if startTime happened yet to open trading
+    function tradingActive() public view returns (bool) {
+        // Check if startTime happened yet to open trading
         if (startTime > 0  && phasesInitialized) {
             return block.timestamp >= startTime; // Return true if phases is set and has started
         } else {
@@ -775,11 +784,13 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         }
     }
 
-    function tradingRestricted() public view returns (bool) { // Check if we are in allowlist phases
+    function tradingRestricted() public view returns (bool) {
+        // Check if we are in allowlist phases
         return tradingActive() && block.timestamp <= (startTime + (SECONDS_PER_PHASE * (TOTAL_PHASES - 1))); // True if tradingActive, but whale limited phases is not over
     }
 
-    function tradingPhase() public view returns (uint256 phase) { // Check the phase
+    function tradingPhase() public view returns (uint256 phase) {
+        // Check the phase
         if (!tradingActive()) {
             return 0; // 0 == No buying
         }
@@ -799,7 +810,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
 
         startTime = startTime_;
         emit SettingsChanged(msg.sender, "setPhasesStartTime");
-    }
+    } // @note setUp
 
     function setWhaleLimitsPerPhase(uint256[] memory maxWei_) external onlyOwner phasesLock{
         uint256 length_ = maxWei_.length;
@@ -815,9 +826,10 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
             previousPhaseMaxWei_ = maxWei_[i];
         }
         emit SettingsChanged(msg.sender, "setWhaleLimitsPerPhase");
-    }
+    } // @note setUp
 
-    function lockPhasesSettings() external onlyOwner phasesLock{ // Phases initialization cannot be unlocked after it is locked
+    function lockPhasesSettings() external onlyOwner phasesLock{
+        // Phases initialization cannot be unlocked after it is locked
         require(startTime >= block.timestamp, "startTime must be set for the future");
         require(maxWeiPerPhase[1] > 0 , "Whale limited phases maxWeiPerPhase must be greater than 0");
 
@@ -901,6 +913,10 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
     function noDRAGONTokens(address contract_)  internal view {
         require(contract_ != address(this), "Owner cannot withdraw $DRAGON token fees collected"); // No $DRAGON tokens, as they are earmarked for fees processing
         require(!swapping, "Owner cannot withdraw while fees are processing"); // Reentrancy guard prevents CT tokens being removed during fees processing
+    }
+
+    function getCommunityTokens() public view returns(address[] memory) {
+        return communityTokens;
     }
 }
 

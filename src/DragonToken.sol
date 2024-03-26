@@ -478,7 +478,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         totalFees = communityLPFee + liquidityFee + treasuryFee + farmFee; 
         require(totalFees <= 800, "Total fees cannot add up to over 8%");
         emit SettingsChanged(msg.sender, "setFeesInBasisPts");
-    }    
+    }
 
     function lockFeeSettings() external onlyOwner {
         // Lock fees settings
@@ -486,7 +486,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
 
         feesLocked = true;
         emit SettingsChanged(msg.sender, "lockFeeSettings");
-    }
+    } // @note covered
 
     function setPairs() external onlyOwner{
         uint256 length_ = communityTokens.length;
@@ -499,7 +499,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
             }
         }
         emit SettingsChanged(msg.sender, "setPairs");
-    }
+    } // @note covered
 
     // Internal functions:
     function _update( // Fees added on to all transfers, and phases check
@@ -826,7 +826,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
             previousPhaseMaxWei_ = maxWei_[i];
         }
         emit SettingsChanged(msg.sender, "setWhaleLimitsPerPhase");
-    } // @note setUp
+    } // @note covered
 
     function lockPhasesSettings() external onlyOwner phasesLock{
         // Phases initialization cannot be unlocked after it is locked
@@ -836,7 +836,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         checkCtPairs();
         phasesInitialized = true; // Lock these phases settings
         emit SettingsChanged(msg.sender, "lockPhasesSettings");
-    }
+    } // @note covered
 
     function setAllowlistedForSomePhase(address[] memory users_, uint256 phase_) external onlyOwner {
         require(phase_ <= TOTAL_PHASES, "Phases are already completed");

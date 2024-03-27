@@ -734,12 +734,13 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
             uint256 newDRAGONBalance_ = balanceOf(address(this)); // Calculate any dust leftover from CT LP creation
             emit ProcessFees(msg.sender, (contractDRAGONBalance_ - newDRAGONBalance_)); // Amount of DRAGON fees processed minus any dust leftover
         } else {
-            if (swapping){
-               revert("Cannot process now, already in the middle of processing fees. You have created a reentrancy issue");
+            if (swapping) {
+                revert("Cannot process now, already in the middle of processing fees. You have created a reentrancy issue");
             }
 
-            if (!canSwap_ && tradingPhase() == TOTAL_PHASES){ // Don't revert forced fees processing of whale limited phases
-               revert("Cannot process yet, more fees need to be collected first");
+            if (!canSwap_ && tradingPhase() == TOTAL_PHASES) {
+                // Don't revert forced fees processing of whale limited phases
+                revert("Cannot process yet, more fees need to be collected first");
             }
         }
     }
@@ -757,7 +758,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         addLiquidityCT(amountDragon_, amountCt_, communityToken_);
         swapping = false;
         emit SwapAndLiquify(amountDragon_,amountCt_, communityToken_);
-    }
+    } // @note covered
 
     function seedAndBurnDragonLP(uint256 amountDragon_, uint256 amountAvax_) external payable {
         require(tradingPhase() != TOTAL_PHASES, "Phases are completed already"); // This function is just to seed LP for IDO launch
@@ -773,7 +774,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         addLiquidityDRAGON(amountDragon_, amountAvax_);
         swapping = false;
         emit SwapAndLiquify(amountDragon_, amountAvax_, WAVAX);
-    }
+    } // @note covered
 
     function tradingActive() public view returns (bool) {
         // Check if startTime happened yet to open trading
@@ -910,7 +911,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         emit NFTWithdraw(to_, tokenId_, contract_);
     }
 
-    function noDRAGONTokens(address contract_)  internal view {
+    function noDRAGONTokens(address contract_) internal view {
         require(contract_ != address(this), "Owner cannot withdraw $DRAGON token fees collected"); // No $DRAGON tokens, as they are earmarked for fees processing
         require(!swapping, "Owner cannot withdraw while fees are processing"); // Reentrancy guard prevents CT tokens being removed during fees processing
     }

@@ -40,7 +40,7 @@ contract DragonTokenTest is Test {
         TOTAL_PHASES = dragonFire.TOTAL_PHASES();
 
         vm.startPrank(owner);
-        dragonFire.setWhaleLimitsPerPhase(maxWei); // set the whale limits per phase (keep equal/increasing)
+        // dragonFire.setWhaleLimitsPerPhase(maxWei); // set the whale limits per phase (keep equal/increasing)
         dragonFire.setPhasesStartTime(block.timestamp + beforeStart); // set the startTime
 
         // create pair btw community tokens and dragon token
@@ -52,7 +52,10 @@ contract DragonTokenTest is Test {
         vm.stopPrank();
     }
 
-    /* test for setMainDex() function */
+    ////////////////////////
+    //     SetMainDex     //
+    ////////////////////////
+
     function test_setMainDexRevertWhenNotFinalPhase() public {
         address otherRouter = 0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106; // approved
 
@@ -67,6 +70,29 @@ contract DragonTokenTest is Test {
 
         vm.prank(owner);
         vm.expectRevert("Router not approved"); // should be reverted due to non-approved router
+        dragonFire.setMainDex(otherRouter);
+    }
+
+    function test_setMainDexRevertNoPairBtwDragonAndAvax() public {
+        address otherRouter = 0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106; // approved
+
+        _lockPhasesSettings(TOTAL_PHASES);
+  
+        vm.prank(owner);
+        vm.expectRevert("LP Pair must be created first, paired with WAVAX");
+        dragonFire.setMainDex(otherRouter);
+    }
+
+    function test_setMainDexRevertNoPairBtwDragonAndCt() public {
+        address otherRouter = 0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106; // approved
+
+        // create pair btw WAVAX and dragon token
+        IUniswapV2Factory(IUniswapV2Router02(otherRouter).factory()).createPair(address(dragonFire), dragonFire.WAVAX());
+
+        _lockPhasesSettings(TOTAL_PHASES);
+  
+        vm.prank(owner);
+        vm.expectRevert("All CT/DRAGON LP Pairs must be created first on main dex");
         dragonFire.setMainDex(otherRouter);
     }
 
@@ -173,6 +199,23 @@ contract DragonTokenTest is Test {
         vm.prank(owner);
         vm.expectRevert("Router not approved");
         dragonFire.setCommunityTokens(_communityTokens, _routers);
+    }
+
+    function test_setCtRouters() public {
+        _lockPhasesSettings(TOTAL_PHASES);
+
+        address[] memory _routers = new address[](8);
+        _routers[0] = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
+        _routers[1] = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
+        _routers[2] = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
+        _routers[3] = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
+        _routers[4] = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
+        _routers[5] = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
+        _routers[6] = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
+        _routers[7] = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
+
+        vm.prank(owner);
+        dragonFire.setCtRouters(_routers);
     }
 
     function test_setCommunityTokens() public {
@@ -404,6 +447,51 @@ contract DragonTokenTest is Test {
         dragonFire.setFeesInBasisPts(500, 200, 100, 100);
     }
 
+    ///////////////////////////////
+    //     Lock Fee Settings     //
+    ///////////////////////////////
+
+    function test_lockFeeSettings() public {
+        assertEq(dragonFire.feesLocked(), false);
+        
+        vm.prank(owner);
+        dragonFire.lockFeeSettings();
+        assertEq(dragonFire.feesLocked(), true);
+    }
+
+    function test_lockFeeSettingsRevertAlreadyLocked() public {
+        assertEq(dragonFire.feesLocked(), false);
+        
+        vm.prank(owner);
+        dragonFire.lockFeeSettings();
+        assertEq(dragonFire.feesLocked(), true);
+
+        vm.prank(owner);
+        vm.expectRevert("Fees settings already locked");
+        dragonFire.lockFeeSettings();
+    }
+
+    ////////////////////////////////
+    //     Set Purchase Tiime     //
+    ////////////////////////////////
+
+    function test_setPhasesStartTimeRevertInvalidValue() public {
+        vm.prank(owner);
+        vm.expectRevert("Start time must be greater than 0");
+        dragonFire.setPhasesStartTime(0);
+    }
+
+    ///////////////////////////
+    //     Trading Phase     //
+    ///////////////////////////
+
+    function test_tradingPhaseReturnTotalPhase(uint8 phase) public {
+        vm.assume(phase > TOTAL_PHASES);
+        _lockPhasesSettings(phase);
+
+        assertEq(dragonFire.tradingPhase(), TOTAL_PHASES);
+    }
+
     ///////////////////////////
     //     Setting Pairs     //
     ///////////////////////////
@@ -481,8 +569,25 @@ contract DragonTokenTest is Test {
         vm.stopPrank();
     }
 
+    function test_seedAndBurnRevertWhenInvalidCommunityTokenIndex(uint256 ctIndex, uint256 otherCtIndex) public {
+        vm.assume(ctIndex != otherCtIndex && ctIndex < 8 && otherCtIndex < 8);
+        address communityToken = dragonFire.communityTokens(otherCtIndex);
+        uint256 amountDragon = 0.2 ether;
+        uint256 amountCt = 0.2 ether;
+
+        deal(address(dragonFire), alice, 1 ether);
+        deal(communityToken, alice, 1 ether);
+
+        vm.startPrank(alice);
+        dragonFire.approve(address(dragonFire), amountDragon);
+        IERC20(communityToken).approve(address(dragonFire), amountCt);
+        vm.expectRevert("Token not found in communityTokens array at that index");
+        dragonFire.seedAndBurnCtLP(ctIndex, communityToken, amountDragon, amountCt);
+        vm.stopPrank();
+    }
+
     function test_seedAndBurnRevertWhenAmountLimit(uint256 lowerAmount, uint256 greaterAmount) public {
-        vm.assume(lowerAmount <= 0.1 ether);
+        vm.assume(lowerAmount < 0.1 ether);
         vm.assume(greaterAmount > 0.1 ether && greaterAmount < 1 ether);
 
         uint256 ctIndex = 0;
@@ -560,14 +665,20 @@ contract DragonTokenTest is Test {
         assertEq(dragonFire.balanceOf(dragonFire.DEAD()), miniumAmountForSwap);
     }
 
-    function test_processFees(uint256 phase) public {
+    function test_processFeesSuccess(uint256 phase) public {
         vm.assume(phase > 0 && phase < TOTAL_PHASES);
+        
         _lockPhasesSettings(phase);
 
-        uint256 miniumAmountForSwap = 111111.11 ether;
+        deal(address(dragonFire), alice, 1000000 ether);
+        deal(alice, 1000000 ether);
+        vm.startPrank(alice);
+        dragonFire.approve(address(dragonFire), 1000000 ether);
+        dragonFire.seedAndBurnDragonLP{value: 1000000 ether}(1000000 ether, 1000000 ether); // add liqudity to Dragon/WAVAX pair
+        vm.stopPrank();
 
-        deal(address(dragonFire), address(dragonFire), miniumAmountForSwap);
-        deal(address(dragonFire), dragonFire.uniswapV2Pair(), miniumAmountForSwap); // can swap
+        uint256 minimumAmountForSwap = 111111.11 ether;
+        deal(address(dragonFire), address(dragonFire), minimumAmountForSwap);
 
         vm.prank(alice);
         dragonFire.processFees();
@@ -589,17 +700,59 @@ contract DragonTokenTest is Test {
         assertEq(restricted, true);
     }
 
+    ///////////////////////////////////////
+    //     Set Whale Limits Per Phase     //
+    ///////////////////////////////////////
+
+    function test_setWhaleLimitsPerPhaseRevertInvalidLength(uint8 length) public {
+        vm.assume(length != (TOTAL_PHASES - 1));
+        uint256[] memory _maxWei = new uint256[](length);
+        for (uint8 i=0; i < length; i++) {
+            _maxWei[i] = uint256(i) * 1000;
+        }
+
+        vm.prank(owner);
+        vm.expectRevert("You must set maximum wei for every whale limited phase");
+        dragonFire.setWhaleLimitsPerPhase(_maxWei);
+    }
+
+    function test_setWhaleLimitsPerPhaseRevertInvalidValue() public {
+        uint256[] memory _maxWei = new uint256[](TOTAL_PHASES - 1);
+        for (uint8 i=0; i < TOTAL_PHASES - 1; i++) {
+            _maxWei[i] = 0;
+        }
+
+        vm.prank(owner);
+        vm.expectRevert("Whale limit must be greater than 0 wei");
+        dragonFire.setWhaleLimitsPerPhase(_maxWei);
+    }
+
+    function test_setWhaleLimitsPerPhaseRevertInvalidIncreasing() public {
+        uint256[] memory _maxWei = new uint256[](TOTAL_PHASES - 1);
+        for (uint8 i=0; i < TOTAL_PHASES - 1; i++) {
+            _maxWei[i] = (0.1 ether) * (TOTAL_PHASES - i);
+        }
+
+        vm.prank(owner);
+        vm.expectRevert("Max amount users can hold must increase or stay the same through the phases.");
+        dragonFire.setWhaleLimitsPerPhase(_maxWei);
+    }
+
     /////////////////////////////////
     //     Lock Phase Settings     //
     /////////////////////////////////
 
     function test_lockPhaseSettings() public {
+        _setWhaleLimitsPerShare();
+
         vm.prank(owner);
         dragonFire.lockPhasesSettings();
         assertEq(dragonFire.phasesInitialized(), true);
     }
 
     function test_lockPhaseSettingsRevertAlreadyLockedAndOnlyOwner() public {
+        _setWhaleLimitsPerShare();
+
         vm.prank(alice);
         vm.expectRevert();
         dragonFire.lockPhasesSettings();
@@ -610,6 +763,21 @@ contract DragonTokenTest is Test {
 
         vm.prank(owner);
         vm.expectRevert("Phases initialization is locked");
+        dragonFire.lockPhasesSettings();
+    }
+
+    function test_lockPhasesSettingsInvalidCurrentTime(uint32 time) public {
+        vm.assume(time > 0);
+        vm.warp(dragonFire.startTime() + time);
+        
+        vm.prank(owner);
+        vm.expectRevert("startTime must be set for the future");
+        dragonFire.lockPhasesSettings();
+    }
+
+    function test_lockPhasesSettingsInvalidWhaleLimit() public {
+        vm.prank(owner);
+        vm.expectRevert("Whale limited phases maxWeiPerPhase must be greater than 0");
         dragonFire.lockPhasesSettings();
     }
 
@@ -831,9 +999,15 @@ contract DragonTokenTest is Test {
     //          helper methods          //
     //////////////////////////////////////
     function _lockPhasesSettings(uint256 phase) internal {
+        _setWhaleLimitsPerShare();
         // lock phase settings
         vm.prank(owner);
         dragonFire.lockPhasesSettings();
         vm.warp(dragonFire.startTime() + (dragonFire.SECONDS_PER_PHASE() * (phase - 1)));
+    }
+
+    function _setWhaleLimitsPerShare() internal {
+        vm.prank(owner);
+        dragonFire.setWhaleLimitsPerPhase(maxWei);
     }
 }

@@ -12,16 +12,8 @@ contract TestERC721 is MockERC721 {
         _mint(to, id);
     }
 
-    function burn(uint256 id) public {
-        require(msg.sender == _ownerOf[id], "not owner");
-        _burn(id);
-    }
-
     function exists(uint256 id) public view returns(bool) {
-        if (_ownerOf[id] != address(0))
-            return true;
-        else
-            return false;
+        return _ownerOf[id] != address(0);
     }
 
     function transfer(address from, address to, uint256 tokenId) external {

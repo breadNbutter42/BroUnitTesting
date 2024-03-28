@@ -478,7 +478,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
         totalFees = communityLPFee + liquidityFee + treasuryFee + farmFee; 
         require(totalFees <= 800, "Total fees cannot add up to over 8%");
         emit SettingsChanged(msg.sender, "setFeesInBasisPts");
-    }
+    } // @note covered
 
     function lockFeeSettings() external onlyOwner {
         // Lock fees settings
@@ -748,7 +748,7 @@ contract DragonFire is ERC20, ERC20Permit, Ownable {
     function seedAndBurnCtLP(uint256 ctIndex_, address communityToken_, uint256 amountDragon_, uint256 amountCt_) external {
         require(tradingPhase() != TOTAL_PHASES, "Phases are completed already"); // This function is just to seed LP for IDO launch
         require(communityTokens[ctIndex_] == communityToken_, "Token not found in communityTokens array at that index"); // Verify valid CT address
-        require(amountDragon_ > 100000000000000000, "Must send at least 0.1 Dragon tokens");
+        require(amountDragon_ > 100000000000000000, "Must send at least 0.1 Dragon tokens"); // @audit should be >=
         require(amountCt_ > 100000000000000000, "Must send at least 0.1 Community tokens");
         require(!swapping, "Already making CT LP, you have created a reentrancy issue");
         swapping = true; // Reentrancy block

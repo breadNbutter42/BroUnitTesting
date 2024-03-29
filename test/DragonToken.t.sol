@@ -515,14 +515,14 @@ contract DragonTokenTest is Test {
         deal(address(dragonFire), alice, 1 ether);
         deal(communityToken, alice, 1 ether);
 
-        uint256 previousDragonBalance = dragonFire.balanceOf(alice);
+        uint256 previousDragonBalance = _balanceOf(alice);
         uint256 previousCtBalance = IERC20(communityToken).balanceOf(alice);
         vm.startPrank(alice);
         dragonFire.approve(address(dragonFire), amountDragon);
         IERC20(communityToken).approve(address(dragonFire), amountCt);
 
         dragonFire.seedAndBurnCtLP(ctIndex, communityToken, amountDragon, amountCt);
-        assertEq(dragonFire.balanceOf(alice), previousDragonBalance - amountDragon);
+        assertEq(_balanceOf(alice), previousDragonBalance - amountDragon);
         assertEq(IERC20(communityToken).balanceOf(alice), previousCtBalance - amountCt);
         vm.stopPrank();
     }
@@ -534,13 +534,13 @@ contract DragonTokenTest is Test {
         deal(address(dragonFire), alice, 1 ether);
         deal(alice, 1 ether);
 
-        uint256 previousDragonBalance = dragonFire.balanceOf(alice);
+        uint256 previousDragonBalance = _balanceOf(alice);
         uint256 previousAVAXBalance = address(alice).balance;
         vm.startPrank(alice);
         dragonFire.approve(address(dragonFire), amountDragon);
 
         dragonFire.seedAndBurnDragonLP{value: amountAVAX}(amountDragon, amountAVAX);
-        assertEq(dragonFire.balanceOf(alice), previousDragonBalance - amountDragon);
+        assertEq(_balanceOf(alice), previousDragonBalance - amountDragon);
         assertEq(address(alice).balance, previousAVAXBalance - amountAVAX);
         vm.stopPrank();
     }
@@ -632,20 +632,111 @@ contract DragonTokenTest is Test {
     }
 
     /////////////////////////////
-    //     Processing Fees     //
+    //     update transfer     //
     /////////////////////////////
 
-    // function test_processFeesPreventBackToBackDumping() public {
-    //     _lockPhasesSettings(TOTAL_PHASES);
+    function test_updateRevertNotAllowCurrentPhase(uint8 phase) public {
+        vm.assume(phase < 3);
+        _lockPhasesSettings(phase);
 
-    //     vm.startPrank(alice);
-    //     dragonFire.processFees();
+        address[] memory users = new address[](1);
+        users[0] = bob;
 
-    //     vm.warp(block.timestamp + dragonFire.SECONDS_PER_PHASE() / 2);
-    //     vm.expectRevert("Cannot process fees more than once every 8 minutes");
-    //     dragonFire.processFees();
-    //     vm.stopPrank();
-    // }
+        vm.prank(owner);
+        dragonFire.setAllowlistedForSomePhase(users, 3);
+
+        deal(address(dragonFire), alice, 1 ether);
+
+        vm.prank(alice);
+        vm.expectRevert("Not allowlisted for current phase");
+        dragonFire.transfer(bob, 0.3 ether);
+    }
+
+    function test_updateRevertInvalidAmountPerShare(uint8 phase, uint8 amount) public {
+        vm.assume(phase < TOTAL_PHASES);
+        vm.assume(amount > phase+1 && amount < 10);
+        _lockPhasesSettings(phase);
+
+        address[] memory users = new address[](1);
+        users[0] = bob;
+
+        deal(address(dragonFire), alice, 1 ether);
+
+        vm.prank(alice);
+        vm.expectRevert("Receiving too much for current whale limited phase");
+        dragonFire.transfer(bob, amount * 0.1 ether);
+    }
+
+    function test_update(uint256 amount) public {
+        vm.assume(amount < 1 ether && amount >= 0.1 ether);
+
+        // checking update extra conditions
+        _lockPhasesSettings(TOTAL_PHASES);
+
+        address[] memory users = new address[](1);
+        users[0] = bob;
+
+        deal(address(dragonFire), alice, 100 ether);
+
+        vm.prank(alice);
+        dragonFire.transfer(bob, 0);
+
+        vm.prank(alice);
+        dragonFire.transfer(address(dragonFire), amount);
+
+        vm.prank(address(dragonFire));
+        dragonFire.transfer(alice, amount);
+
+        // check calculate fee
+        vm.prank(alice);
+        dragonFire.transfer(bob, amount);
+        uint256 fee = amount * dragonFire.totalFees() / 10000;
+        vm.assertEq(_balanceOf(address(dragonFire)), fee);
+        vm.assertEq(_balanceOf(bob), amount - fee);
+
+        // checking no fee by excluding from fee
+        deal(address(dragonFire), bob, 0);
+        vm.prank(owner);
+        dragonFire.excludeFromFees(alice);
+
+        vm.prank(alice);
+        dragonFire.transfer(bob, amount);
+        vm.assertEq(_balanceOf(bob), amount);
+
+        vm.startPrank(owner);
+        dragonFire.includeInFees(alice);
+        dragonFire.excludeFromFees(bob);
+        vm.stopPrank();
+
+        deal(address(dragonFire), bob, 0);
+        vm.prank(alice);
+        dragonFire.transfer(bob, amount);
+        vm.assertEq(_balanceOf(bob), amount);
+    }
+
+    function test_updateTransferToPairOrCt(uint8 phase, uint256 amount) public {
+        vm.assume(phase < TOTAL_PHASES);
+        vm.assume(amount > phase && amount < 10);
+
+        _lockPhasesSettings(phase);
+
+        vm.prank(owner);
+
+        deal(address(dragonFire), alice, 100 ether);
+
+        // check bypassing amount restriction per phase
+        vm.prank(alice);
+        dragonFire.transfer(address(dragonFire.uniswapV2Pair()), amount * 0.1 ether);
+
+        // checking bypassing processFee in total phase
+        vm.warp(dragonFire.startTime() + (dragonFire.SECONDS_PER_PHASE() * TOTAL_PHASES));
+        vm.prank(alice);
+        dragonFire.transfer(address(dragonFire.uniswapV2Pair()), amount * 0.1 ether);
+    }
+
+    /////////////////////////////
+    //     Processing Fees     //
+    /////////////////////////////
 
     function test_processFeesWhenZeroTotalFees() public {
         _lockPhasesSettings(TOTAL_PHASES);
@@ -661,8 +752,8 @@ contract DragonTokenTest is Test {
         vm.prank(alice);
         dragonFire.processFees();
 
-        assertEq(dragonFire.balanceOf(address(dragonFire)), 0);
-        assertEq(dragonFire.balanceOf(dragonFire.DEAD()), miniumAmountForSwap);
+        assertEq(_balanceOf(address(dragonFire)), 0);
+        assertEq(_balanceOf(dragonFire.DEAD()), miniumAmountForSwap);
     }
 
     function test_processFeesSuccess(uint256 phase) public {
@@ -999,15 +1090,21 @@ contract DragonTokenTest is Test {
     //          helper methods          //
     //////////////////////////////////////
     function _lockPhasesSettings(uint256 phase) internal {
+        if (phase != 0)
+            phase = phase - 1;
         _setWhaleLimitsPerShare();
         // lock phase settings
         vm.prank(owner);
         dragonFire.lockPhasesSettings();
-        vm.warp(dragonFire.startTime() + (dragonFire.SECONDS_PER_PHASE() * (phase - 1)));
+        vm.warp(dragonFire.startTime() + (dragonFire.SECONDS_PER_PHASE() * phase));
     }
 
     function _setWhaleLimitsPerShare() internal {
         vm.prank(owner);
         dragonFire.setWhaleLimitsPerPhase(maxWei);
+    }
+
+    function _balanceOf(address account) internal view returns (uint256 balance) {
+        balance = dragonFire.balanceOf(account);
     }
 }

@@ -10,12 +10,12 @@ contract DragonTokenTest is Test {
     uint256 public mainnetFork;
     MockERC20 mockERC20;
     TestERC721 testERC721;
-    
+
     DragonFire dragonFire;
     address owner = makeAddr("Owner");
     address treasury = makeAddr("Treasury");
     address farm = makeAddr("Farm");
-    
+
     address alice = makeAddr("Alice");
     address bob = makeAddr("Bob");
     uint256[] public maxWei = [
@@ -45,8 +45,9 @@ contract DragonTokenTest is Test {
 
         // create pair btw community tokens and dragon token
         address[] memory _communityTokens = dragonFire.getCommunityTokens();
-        for (uint256 i=0; i<_communityTokens.length; i++) {
-            IUniswapV2Factory(dragonFire.uniswapV2Router().factory()).createPair(address(dragonFire), _communityTokens[i]);
+        for (uint256 i = 0; i < _communityTokens.length; i++) {
+            IUniswapV2Factory(dragonFire.uniswapV2Router().factory())
+                .createPair(address(dragonFire), _communityTokens[i]);
         }
         dragonFire.setPairs();
         vm.stopPrank();
@@ -60,7 +61,9 @@ contract DragonTokenTest is Test {
         address otherRouter = 0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106; // approved
 
         vm.prank(owner);
-        vm.expectRevert("Cannot change fees processing functions until IDO launch is completed");
+        vm.expectRevert(
+            "Cannot change fees processing functions until IDO launch is completed"
+        );
         dragonFire.setMainDex(otherRouter);
     }
 
@@ -77,7 +80,7 @@ contract DragonTokenTest is Test {
         address otherRouter = 0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106; // approved
 
         _lockPhasesSettings(TOTAL_PHASES);
-  
+
         vm.prank(owner);
         vm.expectRevert("LP Pair must be created first, paired with WAVAX");
         dragonFire.setMainDex(otherRouter);
@@ -87,12 +90,17 @@ contract DragonTokenTest is Test {
         address otherRouter = 0xE54Ca86531e17Ef3616d22Ca28b0D458b6C89106; // approved
 
         // create pair btw WAVAX and dragon token
-        IUniswapV2Factory(IUniswapV2Router02(otherRouter).factory()).createPair(address(dragonFire), dragonFire.WAVAX());
+        IUniswapV2Factory(IUniswapV2Router02(otherRouter).factory()).createPair(
+            address(dragonFire),
+            dragonFire.WAVAX()
+        );
 
         _lockPhasesSettings(TOTAL_PHASES);
-  
+
         vm.prank(owner);
-        vm.expectRevert("All CT/DRAGON LP Pairs must be created first on main dex");
+        vm.expectRevert(
+            "All CT/DRAGON LP Pairs must be created first on main dex"
+        );
         dragonFire.setMainDex(otherRouter);
     }
 
@@ -101,14 +109,18 @@ contract DragonTokenTest is Test {
 
         // create pair btw community tokens and dragon token
         address[] memory _communityTokens = dragonFire.getCommunityTokens();
-        for (uint256 i=0; i<_communityTokens.length; i++) {
-            IUniswapV2Factory(IUniswapV2Router02(otherRouter).factory()).createPair(address(dragonFire), _communityTokens[i]);
+        for (uint256 i = 0; i < _communityTokens.length; i++) {
+            IUniswapV2Factory(IUniswapV2Router02(otherRouter).factory())
+                .createPair(address(dragonFire), _communityTokens[i]);
         }
         // create pair btw WAVAX and dragon token
-        IUniswapV2Factory(IUniswapV2Router02(otherRouter).factory()).createPair(address(dragonFire), dragonFire.WAVAX());
+        IUniswapV2Factory(IUniswapV2Router02(otherRouter).factory()).createPair(
+            address(dragonFire),
+            dragonFire.WAVAX()
+        );
 
         _lockPhasesSettings(TOTAL_PHASES);
-  
+
         vm.prank(owner);
         dragonFire.setMainDex(otherRouter);
     }
@@ -128,7 +140,9 @@ contract DragonTokenTest is Test {
         _routers[2] = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
 
         vm.prank(owner);
-        vm.expectRevert("Cannot change fees processing functions until IDO launch is completed");
+        vm.expectRevert(
+            "Cannot change fees processing functions until IDO launch is completed"
+        );
         dragonFire.setCommunityTokens(_communityTokens, _routers);
     }
 
@@ -169,7 +183,9 @@ contract DragonTokenTest is Test {
         _routers[8] = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4; // the length is over 8 (exactly 9)
 
         vm.prank(owner);
-        vm.expectRevert("Cannot include more than 8 tokens in the communityTokens array");
+        vm.expectRevert(
+            "Cannot include more than 8 tokens in the communityTokens array"
+        );
         dragonFire.setCommunityTokens(_communityTokens, _routers);
     }
 
@@ -181,7 +197,9 @@ contract DragonTokenTest is Test {
         _routers[1] = 0x60aE616a2155Ee3d9A68541Ba4544862310933d4;
 
         vm.prank(owner);
-        vm.expectRevert("Each token in the communityTokens array must have a corresponding router in the ctRouters array");
+        vm.expectRevert(
+            "Each token in the communityTokens array must have a corresponding router in the ctRouters array"
+        );
         dragonFire.setCtRouters(_routers);
     }
 
@@ -232,30 +250,40 @@ contract DragonTokenTest is Test {
         vm.prank(owner);
         dragonFire.setCommunityTokens(_communityTokens, _routers);
     }
-    
+
     /////////////////////////////////////////
     //     Setting Process Fee Minimum     //
     /////////////////////////////////////////
-    function test_setProcessFeesMinimumRevertWhenPhaseSettingUnlock(uint256 _amount) public {
+    function test_setProcessFeesMinimumRevertWhenPhaseSettingUnlock(
+        uint256 _amount
+    ) public {
         vm.assume(_amount >= dragonFire.TOTAL_SUPPLY_WEI() / 1000000000);
         vm.assume(_amount <= dragonFire.TOTAL_SUPPLY_WEI() / 1000);
 
         vm.prank(owner);
-        vm.expectRevert("Cannot change fees processing functions until IDO launch is completed");
+        vm.expectRevert(
+            "Cannot change fees processing functions until IDO launch is completed"
+        );
         dragonFire.setProcessFeesMinimum(_amount);
     }
 
-    function test_setProcessFeesMinimumRevertMinimumRevert(uint256 _amount) public {
+    function test_setProcessFeesMinimumRevertMinimumRevert(
+        uint256 _amount
+    ) public {
         _lockPhasesSettings(TOTAL_PHASES);
 
         vm.assume(_amount < dragonFire.TOTAL_SUPPLY_WEI() / 1000000000);
 
         vm.prank(owner);
-        vm.expectRevert("Amount too low, cannot be less than 0.0000001% of supply");
+        vm.expectRevert(
+            "Amount too low, cannot be less than 0.0000001% of supply"
+        );
         dragonFire.setProcessFeesMinimum(_amount);
     }
 
-    function test_setProcessFeesMinimumRevertMaximumRevert(uint256 _amount) public {
+    function test_setProcessFeesMinimumRevertMaximumRevert(
+        uint256 _amount
+    ) public {
         _lockPhasesSettings(TOTAL_PHASES);
 
         vm.assume(_amount > dragonFire.TOTAL_SUPPLY_WEI() / 1000);
@@ -276,7 +304,7 @@ contract DragonTokenTest is Test {
 
         assertEq(dragonFire.processFeesMinimum(), _amount);
     }
-    
+
     //////////////////////////////////////
     //     Setting Treasury Address     //
     //////////////////////////////////////
@@ -289,11 +317,15 @@ contract DragonTokenTest is Test {
         dragonFire.setTreasuryAddress(address(0));
     }
 
-    function test_setTreasuryAddressRevertWhenPhaseSettingUnlock(address _treasury) public {
+    function test_setTreasuryAddressRevertWhenPhaseSettingUnlock(
+        address _treasury
+    ) public {
         vm.assume(_treasury != address(0));
 
         vm.prank(owner);
-        vm.expectRevert("Cannot change fees processing functions until IDO launch is completed");
+        vm.expectRevert(
+            "Cannot change fees processing functions until IDO launch is completed"
+        );
         dragonFire.setTreasuryAddress(_treasury);
     }
 
@@ -305,17 +337,21 @@ contract DragonTokenTest is Test {
         vm.prank(owner);
         dragonFire.setTreasuryAddress(_treasury);
         assertEq(dragonFire.treasuryAddress(), _treasury);
-    }    
-    
+    }
+
     //////////////////////////////////
     //     Setting Farm Address     //
     //////////////////////////////////
 
-    function test_setFarmAddressRevertWhenPhaseSettingUnlock(address _farm) public {
+    function test_setFarmAddressRevertWhenPhaseSettingUnlock(
+        address _farm
+    ) public {
         vm.assume(_farm != address(0));
-        
+
         vm.prank(owner);
-        vm.expectRevert("Cannot change fees processing functions until IDO launch is completed");
+        vm.expectRevert(
+            "Cannot change fees processing functions until IDO launch is completed"
+        );
         dragonFire.setFarmAddress(_farm);
     }
 
@@ -340,7 +376,7 @@ contract DragonTokenTest is Test {
         assertEq(dragonFire.isExcludedFromFees(_previousFarm), false);
         assertEq(dragonFire.isExcludedFromFees(_farm), true);
     }
-    
+
     //////////////////////////////////////////////
     //     Exclude/Include Address from Fees    //
     //////////////////////////////////////////////
@@ -348,21 +384,25 @@ contract DragonTokenTest is Test {
     function test_excludeOrIncludeFeesRevertWhenPhaseSettingUnlock() public {
         assertEq(dragonFire.isExcludedFromFees(alice), false);
         vm.prank(owner);
-        vm.expectRevert("Cannot change fees processing functions until IDO launch is completed");
+        vm.expectRevert(
+            "Cannot change fees processing functions until IDO launch is completed"
+        );
         dragonFire.excludeFromFees(alice);
 
         vm.prank(owner);
-        vm.expectRevert("Cannot change fees processing functions until IDO launch is completed");
+        vm.expectRevert(
+            "Cannot change fees processing functions until IDO launch is completed"
+        );
         dragonFire.includeInFees(alice);
     }
 
     function test_excludeFromFeesRevertAlreadyExcluded() public {
         _lockPhasesSettings(TOTAL_PHASES);
-        
+
         vm.prank(owner);
         dragonFire.excludeFromFees(alice);
         assertEq(dragonFire.isExcludedFromFees(alice), true);
-        
+
         vm.prank(owner);
         vm.expectRevert("Account is already excluded");
         dragonFire.excludeFromFees(alice);
@@ -425,7 +465,7 @@ contract DragonTokenTest is Test {
     ////////////////////////////////
     //     Setting Fees State     //
     ////////////////////////////////
-    
+
     function test_setFeesInBasisPts() public {
         _lockPhasesSettings(TOTAL_PHASES);
 
@@ -435,7 +475,9 @@ contract DragonTokenTest is Test {
 
     function test_setFeesInBasisPtsRevertWhenPhaseSettingUnlock() public {
         vm.prank(owner);
-        vm.expectRevert("Cannot change fees processing functions until IDO launch is completed");
+        vm.expectRevert(
+            "Cannot change fees processing functions until IDO launch is completed"
+        );
         dragonFire.setFeesInBasisPts(400, 200, 100, 100);
     }
 
@@ -453,7 +495,7 @@ contract DragonTokenTest is Test {
 
     function test_lockFeeSettings() public {
         assertEq(dragonFire.feesLocked(), false);
-        
+
         vm.prank(owner);
         dragonFire.lockFeeSettings();
         assertEq(dragonFire.feesLocked(), true);
@@ -461,7 +503,7 @@ contract DragonTokenTest is Test {
 
     function test_lockFeeSettingsRevertAlreadyLocked() public {
         assertEq(dragonFire.feesLocked(), false);
-        
+
         vm.prank(owner);
         dragonFire.lockFeeSettings();
         assertEq(dragonFire.feesLocked(), true);
@@ -521,9 +563,17 @@ contract DragonTokenTest is Test {
         dragonFire.approve(address(dragonFire), amountDragon);
         IERC20(communityToken).approve(address(dragonFire), amountCt);
 
-        dragonFire.seedAndBurnCtLP(ctIndex, communityToken, amountDragon, amountCt);
+        dragonFire.seedAndBurnCtLP(
+            ctIndex,
+            communityToken,
+            amountDragon,
+            amountCt
+        );
         assertEq(_balanceOf(alice), previousDragonBalance - amountDragon);
-        assertEq(IERC20(communityToken).balanceOf(alice), previousCtBalance - amountCt);
+        assertEq(
+            IERC20(communityToken).balanceOf(alice),
+            previousCtBalance - amountCt
+        );
         vm.stopPrank();
     }
 
@@ -539,7 +589,10 @@ contract DragonTokenTest is Test {
         vm.startPrank(alice);
         dragonFire.approve(address(dragonFire), amountDragon);
 
-        dragonFire.seedAndBurnDragonLP{value: amountAVAX}(amountDragon, amountAVAX);
+        dragonFire.seedAndBurnDragonLP{value: amountAVAX}(
+            amountDragon,
+            amountAVAX
+        );
         assertEq(_balanceOf(alice), previousDragonBalance - amountDragon);
         assertEq(address(alice).balance, previousAVAXBalance - amountAVAX);
         vm.stopPrank();
@@ -563,13 +616,24 @@ contract DragonTokenTest is Test {
         IERC20(communityToken).approve(address(dragonFire), amountCt);
 
         vm.expectRevert("Phases are completed already");
-        dragonFire.seedAndBurnCtLP(ctIndex, communityToken, amountDragon, amountCt);
+        dragonFire.seedAndBurnCtLP(
+            ctIndex,
+            communityToken,
+            amountDragon,
+            amountCt
+        );
         vm.expectRevert("Phases are completed already");
-        dragonFire.seedAndBurnDragonLP{value: amountAVAX}(amountDragon, amountAVAX);
+        dragonFire.seedAndBurnDragonLP{value: amountAVAX}(
+            amountDragon,
+            amountAVAX
+        );
         vm.stopPrank();
     }
 
-    function test_seedAndBurnRevertWhenInvalidCommunityTokenIndex(uint256 ctIndex, uint256 otherCtIndex) public {
+    function test_seedAndBurnRevertWhenInvalidCommunityTokenIndex(
+        uint256 ctIndex,
+        uint256 otherCtIndex
+    ) public {
         vm.assume(ctIndex != otherCtIndex && ctIndex < 8 && otherCtIndex < 8);
         address communityToken = dragonFire.communityTokens(otherCtIndex);
         uint256 amountDragon = 0.2 ether;
@@ -581,12 +645,22 @@ contract DragonTokenTest is Test {
         vm.startPrank(alice);
         dragonFire.approve(address(dragonFire), amountDragon);
         IERC20(communityToken).approve(address(dragonFire), amountCt);
-        vm.expectRevert("Token not found in communityTokens array at that index");
-        dragonFire.seedAndBurnCtLP(ctIndex, communityToken, amountDragon, amountCt);
+        vm.expectRevert(
+            "Token not found in communityTokens array at that index"
+        );
+        dragonFire.seedAndBurnCtLP(
+            ctIndex,
+            communityToken,
+            amountDragon,
+            amountCt
+        );
         vm.stopPrank();
     }
 
-    function test_seedAndBurnRevertWhenAmountLimit(uint256 lowerAmount, uint256 greaterAmount) public {
+    function test_seedAndBurnRevertWhenAmountLimit(
+        uint256 lowerAmount,
+        uint256 greaterAmount
+    ) public {
         vm.assume(lowerAmount < 0.1 ether);
         vm.assume(greaterAmount > 0.1 ether && greaterAmount < 1 ether);
 
@@ -601,24 +675,41 @@ contract DragonTokenTest is Test {
         IERC20(communityToken).approve(address(dragonFire), greaterAmount);
 
         vm.expectRevert("Must send at least 0.1 Dragon tokens");
-        dragonFire.seedAndBurnCtLP(ctIndex, communityToken, lowerAmount, greaterAmount);
+        dragonFire.seedAndBurnCtLP(
+            ctIndex,
+            communityToken,
+            lowerAmount,
+            greaterAmount
+        );
         vm.expectRevert("Must send at least 0.1 Dragon tokens");
-        dragonFire.seedAndBurnDragonLP{value: greaterAmount}(lowerAmount, greaterAmount);
+        dragonFire.seedAndBurnDragonLP{value: greaterAmount}(
+            lowerAmount,
+            greaterAmount
+        );
 
         vm.expectRevert("Must send at least 0.1 Community tokens");
-        dragonFire.seedAndBurnCtLP(ctIndex, communityToken, greaterAmount, lowerAmount);
+        dragonFire.seedAndBurnCtLP(
+            ctIndex,
+            communityToken,
+            greaterAmount,
+            lowerAmount
+        );
         vm.expectRevert("Must send at least 0.1 AVAX");
-        dragonFire.seedAndBurnDragonLP{value: lowerAmount}(greaterAmount, lowerAmount);
+        dragonFire.seedAndBurnDragonLP{value: lowerAmount}(
+            greaterAmount,
+            lowerAmount
+        );
 
         vm.stopPrank();
     }
 
-    function test_seedAndBurnDragonLPRevertWhenAVAXAmountNotMatched(uint256 amount, uint256 differAmount) public {
+    function test_seedAndBurnDragonLPRevertWhenAVAXAmountNotMatched(
+        uint256 amount,
+        uint256 differAmount
+    ) public {
         uint256 amountDragon = 0.2 ether;
         vm.assume(
-            amount < 1 ether &&
-            differAmount < 1 ether &&
-            amount != differAmount
+            amount < 1 ether && differAmount < 1 ether && amount != differAmount
         );
 
         deal(address(dragonFire), alice, 1 ether);
@@ -626,8 +717,13 @@ contract DragonTokenTest is Test {
 
         vm.startPrank(alice);
         dragonFire.approve(address(dragonFire), amount);
-        vm.expectRevert("Different amount of Avax sent than indicated in call values");
-        dragonFire.seedAndBurnDragonLP{value: amount}(amountDragon, differAmount);
+        vm.expectRevert(
+            "Different amount of Avax sent than indicated in call values"
+        );
+        dragonFire.seedAndBurnDragonLP{value: amount}(
+            amountDragon,
+            differAmount
+        );
         vm.stopPrank();
     }
 
@@ -652,9 +748,12 @@ contract DragonTokenTest is Test {
         dragonFire.transfer(bob, 0.3 ether);
     }
 
-    function test_updateRevertInvalidAmountPerShare(uint8 phase, uint8 amount) public {
+    function test_updateRevertInvalidAmountPerShare(
+        uint8 phase,
+        uint8 amount
+    ) public {
         vm.assume(phase < TOTAL_PHASES);
-        vm.assume(amount > phase+1 && amount < 10);
+        vm.assume(amount > phase + 1 && amount < 10);
         _lockPhasesSettings(phase);
 
         address[] memory users = new address[](1);
@@ -690,7 +789,7 @@ contract DragonTokenTest is Test {
         // check calculate fee
         vm.prank(alice);
         dragonFire.transfer(bob, amount);
-        uint256 fee = amount * dragonFire.totalFees() / 10000;
+        uint256 fee = (amount * dragonFire.totalFees()) / 10000;
         vm.assertEq(_balanceOf(address(dragonFire)), fee);
         vm.assertEq(_balanceOf(bob), amount - fee);
 
@@ -726,12 +825,21 @@ contract DragonTokenTest is Test {
 
         // check bypassing amount restriction per phase
         vm.prank(alice);
-        dragonFire.transfer(address(dragonFire.uniswapV2Pair()), amount * 0.1 ether);
+        dragonFire.transfer(
+            address(dragonFire.uniswapV2Pair()),
+            amount * 0.1 ether
+        );
 
         // checking bypassing processFee in total phase
-        vm.warp(dragonFire.startTime() + (dragonFire.SECONDS_PER_PHASE() * TOTAL_PHASES));
+        vm.warp(
+            dragonFire.startTime() +
+                (dragonFire.SECONDS_PER_PHASE() * TOTAL_PHASES)
+        );
         vm.prank(alice);
-        dragonFire.transfer(address(dragonFire.uniswapV2Pair()), amount * 0.1 ether);
+        dragonFire.transfer(
+            address(dragonFire.uniswapV2Pair()),
+            amount * 0.1 ether
+        );
     }
 
     /////////////////////////////
@@ -744,7 +852,11 @@ contract DragonTokenTest is Test {
         uint256 miniumAmountForSwap = 111111.11 ether;
 
         deal(address(dragonFire), address(dragonFire), miniumAmountForSwap);
-        deal(address(dragonFire), dragonFire.uniswapV2Pair(), miniumAmountForSwap); // can swap
+        deal(
+            address(dragonFire),
+            dragonFire.uniswapV2Pair(),
+            miniumAmountForSwap
+        ); // can swap
 
         vm.prank(owner);
         dragonFire.setFeesInBasisPts(0, 0, 0, 0); // totalFees = 0
@@ -758,14 +870,17 @@ contract DragonTokenTest is Test {
 
     function test_processFeesSuccess(uint256 phase) public {
         vm.assume(phase > 0 && phase < TOTAL_PHASES);
-        
+
         _lockPhasesSettings(phase);
 
         deal(address(dragonFire), alice, 1000000 ether);
         deal(alice, 1000000 ether);
         vm.startPrank(alice);
         dragonFire.approve(address(dragonFire), 1000000 ether);
-        dragonFire.seedAndBurnDragonLP{value: 1000000 ether}(1000000 ether, 1000000 ether); // add liqudity to Dragon/WAVAX pair
+        dragonFire.seedAndBurnDragonLP{value: 1000000 ether}(
+            1000000 ether,
+            1000000 ether
+        ); // add liqudity to Dragon/WAVAX pair
         vm.stopPrank();
 
         uint256 minimumAmountForSwap = 111111.11 ether;
@@ -795,21 +910,25 @@ contract DragonTokenTest is Test {
     //     Set Whale Limits Per Phase     //
     ///////////////////////////////////////
 
-    function test_setWhaleLimitsPerPhaseRevertInvalidLength(uint8 length) public {
+    function test_setWhaleLimitsPerPhaseRevertInvalidLength(
+        uint8 length
+    ) public {
         vm.assume(length != (TOTAL_PHASES - 1));
         uint256[] memory _maxWei = new uint256[](length);
-        for (uint8 i=0; i < length; i++) {
+        for (uint8 i = 0; i < length; i++) {
             _maxWei[i] = uint256(i) * 1000;
         }
 
         vm.prank(owner);
-        vm.expectRevert("You must set maximum wei for every whale limited phase");
+        vm.expectRevert(
+            "You must set maximum wei for every whale limited phase"
+        );
         dragonFire.setWhaleLimitsPerPhase(_maxWei);
     }
 
     function test_setWhaleLimitsPerPhaseRevertInvalidValue() public {
         uint256[] memory _maxWei = new uint256[](TOTAL_PHASES - 1);
-        for (uint8 i=0; i < TOTAL_PHASES - 1; i++) {
+        for (uint8 i = 0; i < TOTAL_PHASES - 1; i++) {
             _maxWei[i] = 0;
         }
 
@@ -820,12 +939,14 @@ contract DragonTokenTest is Test {
 
     function test_setWhaleLimitsPerPhaseRevertInvalidIncreasing() public {
         uint256[] memory _maxWei = new uint256[](TOTAL_PHASES - 1);
-        for (uint8 i=0; i < TOTAL_PHASES - 1; i++) {
+        for (uint8 i = 0; i < TOTAL_PHASES - 1; i++) {
             _maxWei[i] = (0.1 ether) * (TOTAL_PHASES - i);
         }
 
         vm.prank(owner);
-        vm.expectRevert("Max amount users can hold must increase or stay the same through the phases.");
+        vm.expectRevert(
+            "Max amount users can hold must increase or stay the same through the phases."
+        );
         dragonFire.setWhaleLimitsPerPhase(_maxWei);
     }
 
@@ -860,7 +981,7 @@ contract DragonTokenTest is Test {
     function test_lockPhasesSettingsInvalidCurrentTime(uint32 time) public {
         vm.assume(time > 0);
         vm.warp(dragonFire.startTime() + time);
-        
+
         vm.prank(owner);
         vm.expectRevert("startTime must be set for the future");
         dragonFire.lockPhasesSettings();
@@ -868,7 +989,9 @@ contract DragonTokenTest is Test {
 
     function test_lockPhasesSettingsInvalidWhaleLimit() public {
         vm.prank(owner);
-        vm.expectRevert("Whale limited phases maxWeiPerPhase must be greater than 0");
+        vm.expectRevert(
+            "Whale limited phases maxWeiPerPhase must be greater than 0"
+        );
         dragonFire.lockPhasesSettings();
     }
 
@@ -876,27 +999,33 @@ contract DragonTokenTest is Test {
     //    Set AllowList For Some Phase     //
     /////////////////////////////////////////
 
-    function test_setAllowlistedForSomePhase(uint256 usersLength, uint256 phase) public {
+    function test_setAllowlistedForSomePhase(
+        uint256 usersLength,
+        uint256 phase
+    ) public {
         vm.assume(phase <= TOTAL_PHASES);
         vm.assume(usersLength > 0 && usersLength <= 200);
         address[] memory users = new address[](usersLength);
-        for (uint256 i=0; i< usersLength; i++) {
+        for (uint256 i = 0; i < usersLength; i++) {
             users[i] = address(uint160(i));
         }
 
         vm.prank(owner);
         dragonFire.setAllowlistedForSomePhase(users, phase);
-        for (uint256 i=0; i< usersLength; i++) {
+        for (uint256 i = 0; i < usersLength; i++) {
             assertEq(dragonFire.allowlisted(users[i]), phase);
         }
     }
 
-    function test_setAllowlistedForSomePhaseRevertInvalidPhase(uint256 usersLength, uint256 phase) public {
+    function test_setAllowlistedForSomePhaseRevertInvalidPhase(
+        uint256 usersLength,
+        uint256 phase
+    ) public {
         vm.assume(phase > TOTAL_PHASES);
         vm.assume(usersLength > 0 && usersLength <= 200);
 
         address[] memory users = new address[](usersLength);
-        for (uint256 i=0; i< usersLength; i++) {
+        for (uint256 i = 0; i < usersLength; i++) {
             users[i] = address(uint160(i));
         }
 
@@ -905,7 +1034,9 @@ contract DragonTokenTest is Test {
         dragonFire.setAllowlistedForSomePhase(users, phase);
     }
 
-    function test_setAllowlistedForSomePhaseRevertZeroUsersLength(uint256 phase) public {
+    function test_setAllowlistedForSomePhaseRevertZeroUsersLength(
+        uint256 phase
+    ) public {
         vm.assume(phase <= TOTAL_PHASES);
 
         address[] memory users;
@@ -915,12 +1046,14 @@ contract DragonTokenTest is Test {
         dragonFire.setAllowlistedForSomePhase(users, phase);
     }
 
-    function test_setAllowlistedForSomePhaseRevertInvalidUsersLength(uint256 phase) public {
+    function test_setAllowlistedForSomePhaseRevertInvalidUsersLength(
+        uint256 phase
+    ) public {
         vm.assume(phase <= TOTAL_PHASES);
         uint256 usersLength = 201;
 
         address[] memory users = new address[](usersLength);
-        for (uint256 i=0; i< usersLength; i++) {
+        for (uint256 i = 0; i < usersLength; i++) {
             users[i] = address(uint160(i));
         }
 
@@ -964,7 +1097,11 @@ contract DragonTokenTest is Test {
         deal(address(mockERC20), address(dragonFire), 1 ether);
 
         vm.prank(owner);
-        dragonFire.iERC20Approve(address(mockERC20), address(dragonFire), 1 ether);
+        dragonFire.iERC20Approve(
+            address(mockERC20),
+            address(dragonFire),
+            1 ether
+        );
 
         vm.prank(owner);
         dragonFire.iERC20TransferFrom(address(mockERC20), alice, amount);
@@ -974,7 +1111,7 @@ contract DragonTokenTest is Test {
 
     function test_iERC20TransferFromRevertDragonToken(uint256 amount) public {
         vm.assume(amount < 1 ether);
-        
+
         vm.prank(owner);
         vm.expectRevert("Owner cannot withdraw $DRAGON token fees collected");
         dragonFire.iERC20TransferFrom(address(dragonFire), alice, amount);
@@ -982,7 +1119,7 @@ contract DragonTokenTest is Test {
 
     function test_iERC20ApproveRevertDragonToken(uint256 amount) public {
         vm.assume(amount < 1 ether);
-        
+
         vm.prank(owner);
         vm.expectRevert("Owner cannot withdraw $DRAGON token fees collected");
         dragonFire.iERC20Approve(address(dragonFire), alice, amount);
@@ -1000,7 +1137,7 @@ contract DragonTokenTest is Test {
 
     function test_iERC20TransferRevertDragonToken(uint256 amount) public {
         vm.assume(amount < 1 ether);
-        
+
         vm.prank(owner);
         vm.expectRevert("Owner cannot withdraw $DRAGON token fees collected");
         dragonFire.iERC20Transfer(address(dragonFire), alice, amount);
@@ -1068,7 +1205,9 @@ contract DragonTokenTest is Test {
         dragonFire.iERC721TransferFrom(address(dragonFire), alice, tokenId);
     }
 
-    function test_iERC721SafeTransferFromRevertDragonToken(uint256 tokenId) public {
+    function test_iERC721SafeTransferFromRevertDragonToken(
+        uint256 tokenId
+    ) public {
         vm.prank(owner);
         vm.expectRevert("Owner cannot withdraw $DRAGON token fees collected");
         dragonFire.iERC721SafeTransferFrom(address(dragonFire), alice, tokenId);
@@ -1086,17 +1225,31 @@ contract DragonTokenTest is Test {
         dragonFire.iERC721SafeTransfer(address(dragonFire), alice, tokenId);
     }
 
+    //////////////////////////////
+    //     permit functions     //
+    //////////////////////////////
+
+    function test_fallback() public {
+        deal(alice, 1 ether);
+
+        address payable test_addr = payable(address(dragonFire));
+
+        vm.prank(alice);
+        test_addr.transfer(0.1 ether);
+    }
+
     //////////////////////////////////////
     //          helper methods          //
     //////////////////////////////////////
     function _lockPhasesSettings(uint256 phase) internal {
-        if (phase != 0)
-            phase = phase - 1;
+        if (phase != 0) phase = phase - 1;
         _setWhaleLimitsPerShare();
         // lock phase settings
         vm.prank(owner);
         dragonFire.lockPhasesSettings();
-        vm.warp(dragonFire.startTime() + (dragonFire.SECONDS_PER_PHASE() * phase));
+        vm.warp(
+            dragonFire.startTime() + (dragonFire.SECONDS_PER_PHASE() * phase)
+        );
     }
 
     function _setWhaleLimitsPerShare() internal {
@@ -1104,7 +1257,9 @@ contract DragonTokenTest is Test {
         dragonFire.setWhaleLimitsPerPhase(maxWei);
     }
 
-    function _balanceOf(address account) internal view returns (uint256 balance) {
+    function _balanceOf(
+        address account
+    ) internal view returns (uint256 balance) {
         balance = dragonFire.balanceOf(account);
     }
 }
